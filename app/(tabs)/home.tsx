@@ -1,13 +1,14 @@
+import DrugCard from '@/components/DrugCards';
+import NearbyPharmacies from '@/components/NearByPharmacies';
+import SearchBar from '@/components/SearchBar';
+import TopSection from '@/components/TopSection';
+import { ROUTES } from '@/constants/navigation';
+import { fetchDrugs, searchDrugs } from '@/utils/api';
+import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import DrugCard from '@/components/DrugCards';
-import SearchBar from '@/components/SearchBar';
-import TopSection from '@/components/TopSection';
-
-import NearbyPharmacies from '@/components/NearByPharmacies';
-import { fetchDrugs, searchDrugs } from '@/utils/api'; // We'll update api.ts below
 
 type Drug = {
   id: number;
@@ -19,13 +20,14 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
 
   // Fetch all drugs (initial load)
   const loadDrugs = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchDrugs(3,0);
+      const data = await fetchDrugs(3, 0);
       setDrugs(data.data);
     } catch (err: any) {
       console.error(err);
@@ -69,8 +71,57 @@ const Home = () => {
     loadDrugs();
   }, []);
 
-  const handleFindPress = (drugName: string) => {
-    Alert.alert('Find', `Looking for ${drugName}...`);
+  const handleFindPress = async (drugId: number, drugName: string) => {
+    try {
+      // 1. Get user location
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Enable location to find pharmacies');
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = loc.coords;
+
+      // 2. Call backend
+      const response = await fetch(
+        `http://10.214.103.72:3000/stock/nearest?lat=${latitude}&lng=${longitude}&drugId=${drugId}`
+      );
+
+   
+const data = await response.json();
+
+
+
+      // Extract lat/lng from API response (handle different field names)
+    const nearestPharmacy = data[0];
+    console.log(nearestPharmacy)
+
+    const pharmacyLat = nearestPharmacy?.latitude;
+    const pharmacyLng = nearestPharmacy?.longitude;
+
+
+      if (!pharmacyLat || !pharmacyLng) {
+        Alert.alert('Error', 'Pharmacy location data not available');
+        return;
+      }
+
+      // 3. Navigate to map screen with data
+
+      router.push({
+        pathname: ROUTES.MAP,
+        params: {
+          pharmacy: JSON.stringify(data),
+          pharmacyLat: String(pharmacyLat),
+          pharmacyLng: String(pharmacyLng),
+          userLat: String(latitude),
+          userLng: String(longitude),
+        },
+      });
+    } catch (error) {
+      console.error('Error in handleFindPress:', error);
+      Alert.alert('Error', 'Could not find pharmacy');
+    }
   };
 
   if (error) {
@@ -84,8 +135,8 @@ const Home = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
       <TopSection />
-      
-      <SearchBar 
+
+      <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
         placeholder="Search for drugs..."
@@ -100,29 +151,28 @@ const Home = () => {
         </View>
       ) : (
         <View style={{ flexShrink: 1 }}>
-        <FlatList
-          data={drugs}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <DrugCard
-              name={item.name}
-              description="Available in stock"
-              onFindPress={() => handleFindPress(item.name)}
-            />
-          )}
-          contentContainerStyle={{ paddingVertical: 10, paddingBottom: 30 }}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={{ padding: 40, alignItems: 'center' }}>
-              <Text style={{ color: '#666', fontSize: 16 }}>No drugs found</Text>
-            </View>
-          }
-          
-        />
+          <FlatList
+            data={drugs}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <DrugCard
+                name={item.name}
+                description="Available in stock"
+                onFindPress={() => handleFindPress(item.id, item.name)}
+              />
+            )}
+            contentContainerStyle={{ paddingVertical: 10, paddingBottom: 30 }}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Text style={{ color: '#666', fontSize: 16 }}>No drugs found</Text>
+              </View>
+            }
+          />
         </View>
       )}
 
-      <NearbyPharmacies/>
+      <NearbyPharmacies />
     </SafeAreaView>
   );
 };
