@@ -32,8 +32,9 @@ export const apiCall = async <T>(
   }
 };
 
-export const fetchDrugs = async () => {
-  const response = await fetch(`${BASE_URL}/drugs`);
+//Fetch drugss
+export const fetchDrugs = async (limit = 3, offset = 0) => {
+  const response = await fetch(`${BASE_URL}/drugs?limit=${limit}&offset=${offset}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch drugs: ${response.status}`);

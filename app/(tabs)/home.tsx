@@ -6,6 +6,7 @@ import DrugCard from '@/components/DrugCards';
 import SearchBar from '@/components/SearchBar';
 import TopSection from '@/components/TopSection';
 
+import NearbyPharmacies from '@/components/NearByPharmacies';
 import { fetchDrugs, searchDrugs } from '@/utils/api'; // We'll update api.ts below
 
 type Drug = {
@@ -20,12 +21,12 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch all drugs (initial load)
-  const loadAllDrugs = async () => {
+  const loadDrugs = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchDrugs();
-      setDrugs(data);
+      const data = await fetchDrugs(3,0);
+      setDrugs(data.data);
     } catch (err: any) {
       console.error(err);
       setError('Failed to load medicines');
@@ -37,7 +38,7 @@ const Home = () => {
   // Search drugs from backend
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
-      loadAllDrugs();
+      loadDrugs();
       return;
     }
 
@@ -65,7 +66,7 @@ const Home = () => {
 
   // Initial load
   useEffect(() => {
-    loadAllDrugs();
+    loadDrugs();
   }, []);
 
   const handleFindPress = (drugName: string) => {
@@ -98,6 +99,7 @@ const Home = () => {
           </Text>
         </View>
       ) : (
+        <View style={{ flexShrink: 1 }}>
         <FlatList
           data={drugs}
           keyExtractor={(item) => item.id.toString()}
@@ -115,8 +117,12 @@ const Home = () => {
               <Text style={{ color: '#666', fontSize: 16 }}>No drugs found</Text>
             </View>
           }
+          
         />
+        </View>
       )}
+
+      <NearbyPharmacies/>
     </SafeAreaView>
   );
 };

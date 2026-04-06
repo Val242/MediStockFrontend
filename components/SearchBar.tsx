@@ -18,7 +18,7 @@ const SearchBar = ({value, onChangeText,placeholder}: SearchBarProps) => {
         style={styles.searchIcon}
       />
       
-// In SearchBar.tsx
+{/* // In SearchBar.tsx */}
         <TextInput
         style={styles.input}
         placeholder="Search for drugs..."
