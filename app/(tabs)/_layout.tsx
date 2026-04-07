@@ -40,7 +40,19 @@ const TabsLayout = () => {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="pharmacy"
+        options={{
+          title: "Pharmacy",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="medkit" size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
+
+    
   );
 };
 

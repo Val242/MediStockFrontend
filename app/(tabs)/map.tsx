@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, type Region } from 'react-native-maps';
 
 type Pharmacy = {
   id: number;
@@ -18,7 +18,7 @@ type MapScreenProps = {
 };
 
 const MapScreen = ({ pharmacyLat, pharmacyLng, userLat, userLng }: MapScreenProps) => {
-  
+  const mapRef = useRef<MapView | null>(null);
 
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(() => {
     if (userLat && userLng) {
@@ -42,6 +42,17 @@ const MapScreen = ({ pharmacyLat, pharmacyLng, userLat, userLng }: MapScreenProp
     return null;
   });
 
+  const [region, setRegion] = useState<Region | null>(() => {
+    if (userLat && userLng) {
+      return {
+        latitude: typeof userLat === 'string' ? parseFloat(userLat) : userLat,
+        longitude: typeof userLng === 'string' ? parseFloat(userLng) : userLng,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+    }
+    return null;
+  });
 
   useEffect(() => {
     if (userLocation) return;
@@ -67,8 +78,29 @@ const MapScreen = ({ pharmacyLat, pharmacyLng, userLat, userLng }: MapScreenProp
     getLocation();
   }, []);
 
-  // ⛔ No loading state needed anymore
-  if (!userLocation) {
+  useEffect(() => {
+    if (!userLocation && !region) return;
+
+    const targetLatitude = pharmacy?.lat ?? userLocation?.latitude ?? region?.latitude ?? 0;
+    const targetLongitude = pharmacy?.lng ?? userLocation?.longitude ?? region?.longitude ?? 0;
+
+    const nextRegion: Region = {
+      latitude: targetLatitude,
+      longitude: targetLongitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+
+    setRegion(nextRegion);
+  }, [userLocation, pharmacy]);
+
+  useEffect(() => {
+    if (region && mapRef.current) {
+      mapRef.current.animateToRegion(region, 1000);
+    }
+  }, [region]);
+
+  if (!region) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color="#0057B7" />
@@ -78,20 +110,18 @@ const MapScreen = ({ pharmacyLat, pharmacyLng, userLat, userLng }: MapScreenProp
 
   return (
     <MapView
-      style={styles.map}
-      initialRegion={{
-        latitude: pharmacy?.lat ?? userLocation.latitude,
-        longitude: pharmacy?.lng ?? userLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+      ref={(ref) => {
+        mapRef.current = ref;
       }}
+      style={styles.map}
+      region={region}
     >
-  
-      <Marker
-        coordinate={userLocation}
-        title="You"
-      />
-
+      {userLocation && (
+        <Marker
+          coordinate={userLocation}
+          title="You"
+        />
+      )}
 
       {pharmacy && (
         <Marker

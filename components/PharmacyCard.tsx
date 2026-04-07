@@ -1,15 +1,16 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 type PharmacyCardProps = {
   name: string;
   rating?: number;
-  image?: string;           // For future image support
+  image?: string;
+  onPress?: () => void;
 };
 
-const PharmacyCard = ({ name, rating = 4.5, image }: PharmacyCardProps) => {
+const PharmacyCard = ({ name, rating = 4.5, image, onPress }: PharmacyCardProps) => {
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress}>
       {/* Round Profile Picture (DP) - Empty for now */}
       <View style={styles.imageContainer}>
      <Image source={
@@ -29,7 +30,7 @@ const PharmacyCard = ({ name, rating = 4.5, image }: PharmacyCardProps) => {
         <Text style={styles.star}>⭐</Text>
         <Text style={styles.rating}>{rating.toFixed(1)}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 };
 

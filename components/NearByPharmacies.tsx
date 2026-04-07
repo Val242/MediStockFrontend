@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -19,6 +20,7 @@ type Pharmacy = {
 const BASE_URL = "http://10.214.103.72:3000";
 
 const NearbyPharmacies = () => {
+  const router = useRouter();
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
 
   const fetchNearbyPharmacies = async () => {
@@ -82,6 +84,14 @@ const NearbyPharmacies = () => {
               name={item.name}
               rating={4.3 + Math.random() * 0.7}
               image={imageUrl}
+              onPress={() =>
+                router.push({
+                  pathname: '/(tabs)/pharmacy',
+                  params: {
+                    pharmacy: JSON.stringify(item),
+                  },
+                })
+              }
             />
           );
         }}

@@ -21,11 +21,14 @@ const DrugCard = ({
       <View style={styles.mainContent}>
         
         {/* Medicine Image */}
-       <Image source={
-    image
-      ? { uri: image }
-      : require('../assets/images/logo.png')
-  } style={styles.image}/>
+        <Image
+          source={
+            image
+              ? { uri: image }
+              : require('../assets/images/logo.png')
+          }
+          style={styles.image}
+        />
 
         {/* Drug Details - Takes more space */}
         <View style={styles.details}>
