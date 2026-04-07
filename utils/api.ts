@@ -33,7 +33,7 @@ export const apiCall = async <T>(
 };
 
 //Fetch drugss
-export const fetchDrugs = async (limit = 3, offset = 0) => {
+export const fetchDrugs = async (limit = 4, offset = 0) => {
   const response = await fetch(`${BASE_URL}/drugs?limit=${limit}&offset=${offset}`);
 
   if (!response.ok) {
