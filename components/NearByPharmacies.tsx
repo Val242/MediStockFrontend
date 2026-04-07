@@ -1,15 +1,38 @@
-import React from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Location from 'expo-location';
+import React, { useEffect, useState } from 'react';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import PharmacyCard from './PharmacyCard';
 
 const NearbyPharmacies = () => {
-  // Sample data - replace with real API later
-  const pharmacies = [
-    { id: '1', name: 'MediPlus Pharmacy' },
-    { id: '2', name: 'HealthCare Chemist' },
-    { id: '3', name: 'QuickMed Pharmacy' },
-    { id: '4', name: 'Wellness Drugstore' },
-  ];
+  const [pharmacies, setPharmacies] = useState([]);
+
+  const fetchNearbyPharmacies = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied');
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = loc.coords;
+
+      const response = await fetch(
+        `http://10.214.103.72:3000/pharmacies/nearby?lat=${latitude}&lng=${longitude}`
+      );
+
+      const data = await response.json();
+      console.log("Nearby pharmacies:", data);
+      setPharmacies(data); // Set the fetched data to state
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchNearbyPharmacies();
+  }, []);
 
   return (
     <View style={styles.container}>

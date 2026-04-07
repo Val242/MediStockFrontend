@@ -19,7 +19,7 @@ type MapScreenProps = {
 
 const MapScreen = ({ pharmacyLat, pharmacyLng, userLat, userLng }: MapScreenProps) => {
   
-  // ✅ Initialize immediately (no delay)
+
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(() => {
     if (userLat && userLng) {
       return {
@@ -42,7 +42,7 @@ const MapScreen = ({ pharmacyLat, pharmacyLng, userLat, userLng }: MapScreenProp
     return null;
   });
 
-  // ✅ Only fetch location if not provided
+
   useEffect(() => {
     if (userLocation) return;
 
@@ -86,13 +86,13 @@ const MapScreen = ({ pharmacyLat, pharmacyLng, userLat, userLng }: MapScreenProp
         longitudeDelta: 0.01,
       }}
     >
-      {/* ✅ User marker */}
+  
       <Marker
         coordinate={userLocation}
         title="You"
       />
 
-      {/* ✅ Pharmacy marker */}
+
       {pharmacy && (
         <Marker
           coordinate={{ latitude: pharmacy.lat, longitude: pharmacy.lng }}

@@ -7,40 +7,61 @@ import { fetchDrugs, searchDrugs } from '@/utils/api';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Drug = {
   id: number;
   name: string;
+  image: string
 };
+
+type Pharmacy={
+  
+}
 
 const Home = () => {
   const [drugs, setDrugs] = useState<Drug[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [showNearbyPharmacies, setShowNearbyPharmacies] = useState(true);
   const router = useRouter();
 
-  // Fetch all drugs (initial load)
-  const loadDrugs = async () => {
+  // Fetch all drugs (initial load or load more)
+  const loadDrugs = async (currentOffset = 0, append = false) => {
     try {
-      setLoading(true);
+      if (!append) setLoading(true);
       setError(null);
-      const data = await fetchDrugs(3, 0);
-      setDrugs(data.data);
+      const data = await fetchDrugs(3, currentOffset);
+      if (append) {
+        setDrugs(prev => [...prev, ...data.data]);
+      } else {
+        setDrugs(data.data);
+      }
+      setOffset(currentOffset + 3);
     } catch (err: any) {
       console.error(err);
       setError('Failed to load medicines');
     } finally {
-      setLoading(false);
+      if (!append) setLoading(false);
     }
   };
+
+  // Load more drugs
+  const loadMore = () => {
+    loadDrugs(offset, true);
+    setShowNearbyPharmacies(false);
+  };
+  console.log("DRUG DATA:", drugs);
 
   // Search drugs from backend
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
-      loadDrugs();
+      loadDrugs(0, false);
+      setOffset(3);
+      setShowNearbyPharmacies(true);
       return;
     }
 
@@ -49,6 +70,8 @@ const Home = () => {
       setError(null);
       const data = await searchDrugs(query.trim());
       setDrugs(data);
+      setOffset(0); // Reset offset for search
+      setShowNearbyPharmacies(false); // Hide nearby when searching
     } catch (err: any) {
       console.error(err);
       setError('Search failed. Please try again.');
@@ -68,7 +91,7 @@ const Home = () => {
 
   // Initial load
   useEffect(() => {
-    loadDrugs();
+    loadDrugs(0, false);
   }, []);
 
   const handleFindPress = async (drugId: number, drugName: string) => {
@@ -90,6 +113,7 @@ const Home = () => {
 
    
 const data = await response.json();
+
 
 
 
@@ -142,6 +166,12 @@ const data = await response.json();
         placeholder="Search for drugs..."
       />
 
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, marginTop: 8 }}>
+        <Pressable onPress={loadMore}>
+          <Text style={{ color: '#0057B7', fontSize: 16, fontWeight: '600' }}>See More</Text>
+        </Pressable>
+      </View>
+
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#0057B7" />
@@ -158,6 +188,7 @@ const data = await response.json();
               <DrugCard
                 name={item.name}
                 description="Available in stock"
+                 image={item.image}
                 onFindPress={() => handleFindPress(item.id, item.name)}
               />
             )}
@@ -168,11 +199,13 @@ const data = await response.json();
                 <Text style={{ color: '#666', fontSize: 16 }}>No drugs found</Text>
               </View>
             }
+             
           />
+            {showNearbyPharmacies && <NearbyPharmacies />}
         </View>
       )}
 
-      <NearbyPharmacies />
+    
     </SafeAreaView>
   );
 };

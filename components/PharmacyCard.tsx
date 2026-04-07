@@ -4,7 +4,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 type PharmacyCardProps = {
   name: string;
   rating?: number;
-  image?: any;           // For future image support
+  image?: string;           // For future image support
 };
 
 const PharmacyCard = ({ name, rating = 4.5, image }: PharmacyCardProps) => {
@@ -12,10 +12,11 @@ const PharmacyCard = ({ name, rating = 4.5, image }: PharmacyCardProps) => {
     <View style={styles.card}>
       {/* Round Profile Picture (DP) - Empty for now */}
       <View style={styles.imageContainer}>
-        <Image
-          source={image || require('../assets/images/icon.png')}
-          style={styles.image}
-        />
+     <Image source={
+    image
+      ? { uri: image }
+      : require('../assets/images/logo.png')
+  } style={styles.image}/>
       </View>
 
       {/* Pharmacy Name */}

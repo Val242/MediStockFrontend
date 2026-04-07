@@ -1,5 +1,5 @@
 // app/utils/api.ts
-const BASE_URL = 'http://10.214.103.72:3000';   // ← Change this to your real backend URL
+export const BASE_URL = 'http://10.214.103.72:3000';   // ← Change this to your real backend URL
 
 // For local development on physical device / emulator, use your computer's IP
 // Example: const BASE_URL = 'http://192.168.1.100:3000/api';

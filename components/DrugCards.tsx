@@ -1,10 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 type DrugCardProps = {
   name: string;
   description?: string;
-  image?: any;           // require() or { uri: string }
+  image?: string;           // require() or { uri: string }
   onFindPress?: () => void;
 };
 
@@ -21,10 +21,11 @@ const DrugCard = ({
       <View style={styles.mainContent}>
         
         {/* Medicine Image */}
-        {/* <Image 
-          source={image || require('../assets/images/medicine-placeholder.png')} 
-          style={styles.image}
-        /> */}
+       <Image source={
+    image
+      ? { uri: image }
+      : require('../assets/images/logo.png')
+  } style={styles.image}/>
 
         {/* Drug Details - Takes more space */}
         <View style={styles.details}>
