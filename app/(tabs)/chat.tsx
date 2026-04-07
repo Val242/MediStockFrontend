@@ -1,4 +1,6 @@
+import { BASE_URL } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import React, { useState } from "react";
 import {
   Alert,
@@ -14,6 +16,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const PRIMARY_BLUE = "#0057B7";
 
+type SmartSearchResult = {
+  pharmacy: string;
+  distance: number;
+  availableDrugs: string[];
+};
+
 const commonSearches = [
   { label: "Fever & headache" },
   { label: "Sore throat" },
@@ -25,8 +33,11 @@ const commonSearches = [
 
 export default function Chat() {
   const [query, setQuery] = useState("");
+  const [responseItems, setResponseItems] = useState<SmartSearchResult[] | null>(null);
+  const [responseText, setResponseText] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
@@ -37,7 +48,58 @@ export default function Chat() {
       return;
     }
 
-    Alert.alert("Search preview", `Searching for: ${trimmedQuery}`);
+    setIsSearching(true);
+    setResponseText(null);
+    setResponseItems(null);
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Location required",
+          "Please enable location permissions so we can find the nearest hospital with the medicine."
+        );
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+
+      const response = await fetch(`${BASE_URL}/stock/smart-search`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: trimmedQuery,
+          lat: latitude,
+          lng: longitude,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        setResponseItems(data as SmartSearchResult[]);
+      } else if (typeof data === "string") {
+        setResponseText(data);
+      } else {
+        const resultText = data?.message || data?.result || JSON.stringify(data, null, 2);
+        setResponseText(resultText);
+      }
+    } catch (error: any) {
+      console.error("Smart search error:", error);
+      Alert.alert(
+        "Search failed",
+        error?.message || "Unable to reach the AI service."
+      );
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleChipClick = (label: string) => {
@@ -76,7 +138,6 @@ export default function Chat() {
           </Text>
 
           <View style={styles.searchContainer}>
-            <Ionicons name="search-outline" size={18} color={PRIMARY_BLUE} />
 
             <TextInput
               style={styles.searchInput}
@@ -97,6 +158,33 @@ export default function Chat() {
           <Text style={styles.searchHint}>
             Try paracetamol, malaria treatment, or child cough syrup
           </Text>
+
+          {isSearching ? (
+            <View style={styles.resultCard}>
+              <Text style={styles.resultText}>Searching AI backend...</Text>
+            </View>
+          ) : responseItems ? (
+            <View style={styles.resultCard}>
+              <Text style={styles.resultLabel}>Nearest pharmacies with availability</Text>
+              {responseItems.map((item, index) => (
+                <View key={`${item.pharmacy}-${index}`} style={styles.pharmacyResult}>
+                  <Text style={styles.pharmacyName}>{item.pharmacy}</Text>
+                  <Text style={styles.distanceText}>
+                    {item.distance.toFixed(1)} km away
+                  </Text>
+                  <Text style={styles.availableDrugsLabel}>Available drugs:</Text>
+                  <Text style={styles.availableDrugsText}>
+                    {item.availableDrugs.join(", ")}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : responseText ? (
+            <View style={styles.resultCard}>
+              <Text style={styles.resultLabel}>AI Smart Search Result</Text>
+              <Text style={styles.resultText}>{responseText}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.commonSearchesCard}>
@@ -314,5 +402,55 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: "#FFFFFF",
+  },
+  resultCard: {
+    marginTop: 18,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
+    shadowColor: "#0C3870",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+  resultLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#2B4262",
+    marginBottom: 8,
+  },
+  resultText: {
+    fontSize: 15,
+    color: "#3C4A66",
+    lineHeight: 22,
+  },
+  pharmacyResult: {
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E6EDF7",
+  },
+  pharmacyName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#102A43",
+  },
+  distanceText: {
+    fontSize: 13,
+    color: "#5B6F8E",
+    marginTop: 4,
+  },
+  availableDrugsLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0D3B66",
+    marginTop: 10,
+  },
+  availableDrugsText: {
+    fontSize: 14,
+    color: "#334E68",
+    marginTop: 4,
+    lineHeight: 20,
   },
 });
