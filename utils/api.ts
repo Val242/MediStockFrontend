@@ -51,6 +51,16 @@ export const searchDrugs = async (name: string): Promise<{ id: number; name: str
   return response.json();
 };
 
+// Fetch nearby pharmacies
+export const fetchNearbyPharmacies = async (lat: number, lng: number) => {
+  const response = await fetch(`${BASE_URL}/pharmacies/nearby?lat=${lat}&lng=${lng}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch pharmacies: ${response.status}`);
+  }
+  const data = await response.json();
+  return data;
+};
+
 
 // Helper functions
 export const get = <T>(endpoint: string) => apiCall<T>(endpoint, { method: 'GET' });
@@ -60,3 +70,11 @@ export const post = <T>(endpoint: string, body: any) =>
     method: 'POST',
     body: JSON.stringify(body),
   });
+
+
+  //   imageWrapper: {
+  //   position: 'absolute',
+  //   top: -25,
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  // },

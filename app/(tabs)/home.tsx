@@ -7,7 +7,7 @@ import { fetchDrugs, searchDrugs } from '@/utils/api';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Drug = {
@@ -25,43 +25,28 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [offset, setOffset] = useState(0);
-  const [showNearbyPharmacies, setShowNearbyPharmacies] = useState(true);
   const router = useRouter();
 
-  // Fetch all drugs (initial load or load more)
-  const loadDrugs = async (currentOffset = 0, append = false) => {
+  // Fetch all drugs (initial load)
+  const loadDrugs = async () => {
     try {
-      if (!append) setLoading(true);
+      setLoading(true);
       setError(null);
-      const data = await fetchDrugs(3, currentOffset);
-      if (append) {
-        setDrugs(prev => [...prev, ...data.data]);
-      } else {
-        setDrugs(data.data);
-      }
-      setOffset(currentOffset + 3);
+      const data = await fetchDrugs(3, 0);
+      setDrugs(data.data);
     } catch (err: any) {
       console.error(err);
       setError('Failed to load medicines');
     } finally {
-      if (!append) setLoading(false);
+      setLoading(false);
     }
-  };
-
-  // Load more drugs
-  const loadMore = () => {
-    loadDrugs(offset, true);
-    setShowNearbyPharmacies(false);
   };
   console.log("DRUG DATA:", drugs);
 
   // Search drugs from backend
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
-      loadDrugs(0, false);
-      setOffset(3);
-      setShowNearbyPharmacies(true);
+      loadDrugs();
       return;
     }
 
@@ -70,8 +55,6 @@ const Home = () => {
       setError(null);
       const data = await searchDrugs(query.trim());
       setDrugs(data);
-      setOffset(0); // Reset offset for search
-      setShowNearbyPharmacies(false); // Hide nearby when searching
     } catch (err: any) {
       console.error(err);
       setError('Search failed. Please try again.');
@@ -91,7 +74,7 @@ const Home = () => {
 
   // Initial load
   useEffect(() => {
-    loadDrugs(0, false);
+    loadDrugs();
   }, []);
 
   const handleFindPress = async (drugId: number, drugName: string) => {
@@ -119,7 +102,7 @@ const data = await response.json();
 
       // Extract lat/lng from API response (handle different field names)
     const nearestPharmacy = data[0];
-    console.log(nearestPharmacy)
+ 
 
     const pharmacyLat = nearestPharmacy?.latitude;
     const pharmacyLng = nearestPharmacy?.longitude;
@@ -166,12 +149,6 @@ const data = await response.json();
         placeholder="Search for drugs..."
       />
 
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, marginTop: 8 }}>
-        <Pressable onPress={loadMore}>
-          <Text style={{ color: '#0057B7', fontSize: 16, fontWeight: '600' }}>See More</Text>
-        </Pressable>
-      </View>
-
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#0057B7" />
@@ -201,7 +178,7 @@ const data = await response.json();
             }
              
           />
-            {showNearbyPharmacies && <NearbyPharmacies />}
+            <NearbyPharmacies />
         </View>
       )}
 
